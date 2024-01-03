@@ -85,9 +85,9 @@ const login = async (req, res) => {
 
         // Jika password cocok, buat token JWT
         const token = jwt.sign(
-            { userId: user.id, username: user.username, role: user.role },
+            { id: user.id, username: user.username, role: user.role, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' } // Token akan kadaluwarsa dalam 1 jam
+            { expiresIn: '1d' } // Token akan kadaluwarsa dalam 1 hari
         );
 
         res.json({

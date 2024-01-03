@@ -5,6 +5,7 @@ import cors from 'cors';
 import express from 'express';
 const app = express();
 
+
 import userRoutes from './src/routes/users.js';
 import latihansoalRoutes from './src/routes/list-latihan.js';
 import banksoalRoutes from './src/routes/bank-soal.js';
@@ -19,6 +20,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(middleware);
+
 
 // Your routes and middleware will go here
 app.use('/users', userRoutes);

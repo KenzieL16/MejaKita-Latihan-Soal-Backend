@@ -8,7 +8,7 @@ async function getAllSoal(id_latihan_soal) {
     try {
         // Query untuk mendapatkan semua soal berdasarkan id_bank_soal
         const getAllSoalQuery = `
-            SELECT ls.durasi, s.id_soal, s.konten_soal, j.id_jawaban, j.konten_jawaban, j.jawaban_benar
+            SELECT ls.durasi, s.id_soal, s.konten_soal, j.id_jawaban, j.konten_jawaban 
             FROM latihan_soal ls
             JOIN soal s ON ls.id_bank_soal = s.id_bank_soal
             LEFT JOIN jawaban j ON s.id_soal = j.id_soal

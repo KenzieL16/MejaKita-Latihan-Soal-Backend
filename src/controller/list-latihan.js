@@ -2,11 +2,15 @@ import dashboardModel from "../models/list-latihan.js";
 
 
 const createNewLatsol = async (req, res) => {
-    const { body } = req;
+    const { body, user } = req;
 
     try {
-        const result = await dashboardModel.createNewLatsol(body);
-        res.status(201).json({ success: true, message: 'Latihan soal baru telah ditambahkan', result });
+        if (user && user.role === 'Kontributor') {
+            const result = await dashboardModel.createNewLatsol(body);
+            res.status(201).json({ success: true, message: 'Latihan soal baru telah ditambahkan', result });
+        } else {
+            res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Gagal menambahkan latihan soal', error: error.message });

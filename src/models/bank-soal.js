@@ -25,7 +25,7 @@ async function createBanksoal({ nama_banksoal }) {
 
 const getBanksoal = async () => {
     try {
-        const [rows, fields] = await dbpool.execute('SELECT id_bank_soal, nama_banksoal FROM bank_soal');
+        const [rows, fields] = await dbpool.execute('SELECT id_bank_soal, nama_banksoal FROM bank_soal WHERE deleted IS NULL');
         return rows;
     } catch (error) {
         throw error;

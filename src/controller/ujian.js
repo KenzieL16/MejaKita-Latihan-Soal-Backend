@@ -37,19 +37,19 @@ const submitJawaban = async (req, res) => {
 };
 
 const enrollment = async (req, res) => {
-    const { params, body } = req;
+    const { params } = req;
     const { id_latihan_soal } = params;
-    const { id_user } = body;
+    const { id } = req.user;
 
     try {
         console.log(id_latihan_soal);
-        console.log(id_user);
+        console.log(id);
         // Pastikan id_user dan id_latihan_soal terdefinisi
-        if (id_user === undefined || id_latihan_soal === undefined) {
+        if (id === undefined || id_latihan_soal === undefined) {
             throw new Error('Parameter id_user atau id_latihan_soal tidak valid');
         }
 
-        const result = await ujianModel.enrollment(id_user, id_latihan_soal);
+        const result = await ujianModel.enrollment(id, id_latihan_soal);
         res.status(200).json({ success: true, message: 'Data Disimpan', data: result });
     } catch (error) {
         console.error(error);

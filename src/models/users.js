@@ -50,7 +50,7 @@ const getUserByEmailAndPassword = (email) => {
                 const user = rows[0];
 
                 if (user.password) {
-                    return { id: user.id, username: user.username, email: user.email, role: user.role, combinedPassword: user.password };
+                    return { id: user.id_user, username: user.username, email: user.email, role: user.role, combinedPassword: user.password };
                 } else {
                     // Handle the case where password is undefined
                     console.error('Password is undefined for user:', user);
