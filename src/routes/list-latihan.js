@@ -10,8 +10,8 @@ router.get('/', dashboardcontroller.getDashboard);
 
 router.post('/add-latsol', verifyToken, dashboardcontroller.createNewLatsol);
 
-router.patch('/update/:id_latihan_soal', dashboardcontroller.updateLatsol);
+router.patch('/update/:id_latihan_soal', verifyToken, dashboardcontroller.updateLatsol);
 
-router.delete('/delete/:id_latihan_soal', dashboardcontroller.deleteLatsol);
+router.delete('/delete/:id_latihan_soal', verifyToken, dashboardcontroller.deleteLatsol);
 
 export default router;

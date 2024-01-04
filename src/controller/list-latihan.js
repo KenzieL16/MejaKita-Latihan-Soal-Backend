@@ -19,17 +19,19 @@ const createNewLatsol = async (req, res) => {
 const updateLatsol = async (req, res) => {
     try {
         console.log(req.params)
+        const { user } = req;
         const { id_latihan_soal } = req.params;
         const { id_bank_soal, status, nama_latihansoal, durasi } = req.body;
 
-        // Panggil fungsi updateLatsol dari service
-        const result = await dashboardModel.updateLatsol({ id_latihan_soal, id_bank_soal, status, nama_latihansoal, durasi });
+        if (user && user.role === 'Kontributor') {
+            // Panggil fungsi updateLatsol dari service
+            const result = await dashboardModel.updateLatsol({ id_latihan_soal, id_bank_soal, status, nama_latihansoal, durasi });
+            res.status(201).json({ success: true, message: 'Latihan soal telah diperbarui', result });
+        } else {
+            res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
 
-        return res.status(200).json({
-            success: true,
-            message: 'Latihan soal berhasil diperbarui',
-            data: result,
-        });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -72,13 +74,17 @@ const getBanksoal = async (req, res) => {
 
 const deleteLatsol = async (req, res) => {
     const { id_latihan_soal } = req.params;
-    const { body } = req;
+    const { body, user } = req;
     try {
-        await dashboardModel.deleteLatsol(id_latihan_soal);
-        res.json({
-            message: 'Berhasil Menghapus Latihan Soal',
-            data: body
-        })
+        if (user && user.role === 'Kontributor') {
+            await dashboardModel.deleteLatsol(id_latihan_soal);
+            res.json({
+                message: 'Berhasil Menghapus Latihan Soal',
+                data: body
+            })
+        } else {
+            res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
     } catch (error) {
         res.status(500).json({
             message: "Server Error",

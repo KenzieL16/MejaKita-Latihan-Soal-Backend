@@ -63,17 +63,18 @@ async function updateSoal(id_soal, body) {
         const updateSoalQuery = 'UPDATE soal SET konten_soal = ? WHERE id_soal = ?';
         await connection.execute(updateSoalQuery, [konten_soal, id_soal]);
 
-        // Hapus semua jawaban yang terkait dengan pertanyaan ini
-        const deleteJawabanQuery = 'DELETE FROM jawaban WHERE id_soal = ?';
-        await connection.execute(deleteJawabanQuery, [id_soal]);
-
-        // Loop untuk menambahkan jawaban yang baru
         for (let j = 0; j < jawaban.length; j++) {
-            const { konten_jawaban, jawaban_benar } = jawaban[j];
+            const { id_jawaban, konten_jawaban, jawaban_benar } = jawaban[j];
 
-            // Tambahkan data ke tabel jawaban
-            const createJawabanQuery = 'INSERT INTO jawaban (id_soal, konten_jawaban, jawaban_benar) VALUES (?, ?, ?)';
-            await connection.execute(createJawabanQuery, [id_soal, konten_jawaban, jawaban_benar]);
+            if (id_jawaban) {
+                // Jika id_jawaban ada, lakukan UPDATE
+                const updateJawabanQuery = 'UPDATE jawaban SET konten_jawaban = ?, jawaban_benar = ? WHERE id_jawaban = ?';
+                await connection.execute(updateJawabanQuery, [konten_jawaban, jawaban_benar, id_jawaban]);
+            } else {
+                // Jika id_jawaban tidak ada, lakukan INSERT
+                const createJawabanQuery = 'INSERT INTO jawaban (id_soal, konten_jawaban, jawaban_benar) VALUES (?, ?, ?)';
+                await connection.execute(createJawabanQuery, [id_soal, konten_jawaban, jawaban_benar]);
+            }
         }
 
         // Perbarui data pada tabel pembahasan

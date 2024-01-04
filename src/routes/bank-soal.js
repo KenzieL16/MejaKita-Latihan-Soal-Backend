@@ -2,6 +2,8 @@ import express from 'express';
 
 import banksoalcontroller from '../controller/bank-soal.js';
 
+import verifyToken from '../middleware/verifytoken.js';
+
 const router = express.Router();
 
 router.get('/banksoal', banksoalcontroller.getBanksoal);

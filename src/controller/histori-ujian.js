@@ -1,11 +1,13 @@
 import historiModel from "../models/history-ujian.js";
 
 const getHistoryByIdUser = async (req, res) => {
-    const { params } = req;
-    const { id_user } = params
+    const { id } = req.user;
 
     try {
-        const history = await historiModel.getHistoryByIdUser(id_user);
+        if (id === undefined) {
+            throw new Error('You must login');
+        }
+        const history = await historiModel.getHistoryByIdUser(id);
         res.status(200).json(history);
     } catch (error) {
         console.error(error);
