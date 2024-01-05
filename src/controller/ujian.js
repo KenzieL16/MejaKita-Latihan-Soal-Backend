@@ -60,12 +60,14 @@ const enrollment = async (req, res) => {
 const countNilai = async (req, res) => {
     const { params } = req;
     const { id_latihan_soal } = params;
-
+    const { id } = req.user;
     try {
-        const { id_user } = req.body;
+        if (id === undefined) {
+            throw new Error('You must login');
+        }
 
         // Hitung nilai dan simpan ke tabel nilai_akhir
-        const result = await ujianModel.countNilai(id_user, id_latihan_soal);
+        const result = await ujianModel.countNilai(id, id_latihan_soal);
 
         res.status(200).json({ success: true, data: result });
     } catch (error) {

@@ -29,15 +29,20 @@ const updateBanksoal = async (req, res) => {
         console.log(req.params)
         const { id_bank_soal } = req.params;
         const { nama_banksoal } = req.body;
+        const { user } = req;
 
-        // Panggil fungsi banksoal dari service
-        const result = await banksoalModel.updateBanksoal({ id_bank_soal, nama_banksoal });
+        if (user && user.role === 'Kontributor') {
+            // Panggil fungsi banksoal dari service
+            const result = await banksoalModel.updateBanksoal({ id_bank_soal, nama_banksoal });
 
-        return res.status(200).json({
-            success: true,
-            message: 'Bank soal berhasil diperbarui',
-            data: result,
-        });
+            return res.status(200).json({
+                success: true,
+                message: 'Bank soal berhasil diperbarui',
+                data: result,
+            });
+        } else {
+            res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -51,13 +56,18 @@ const updateBanksoal = async (req, res) => {
 const deleteBanksoal = async (req, res) => {
     const { id_bank_soal } = req.params;
     const { body } = req;
+    const { user } = req;
 
     try {
-        await banksoalModel.deleteBankSoal(id_bank_soal);
-        res.json({
-            message: 'Berhasil Menghapus Bank Soal',
-            data: body
-        })
+        if (user && user.role === 'Kontributor') {
+            await banksoalModel.deleteBankSoal(id_bank_soal);
+            res.json({
+                message: 'Berhasil Menghapus Bank Soal',
+                data: body
+            })
+        } else {
+            res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
     } catch (error) {
         res.status(500).json({
             message: "Server Error",

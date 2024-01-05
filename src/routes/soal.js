@@ -12,6 +12,6 @@ router.patch('/edit-soal/:id_soal', verifyToken, soalcontroller.updateSoal)
 
 router.get('/:id_bank_soal/get-all-soal', soalcontroller.getAllSoal)
 
-router.delete('/delete-soal/:id_soal', soalcontroller.deleteSoal)
+router.delete('/delete-soal/:id_soal', verifyToken, soalcontroller.deleteSoal)
 
 export default router;

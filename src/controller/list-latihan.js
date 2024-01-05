@@ -42,17 +42,6 @@ const updateLatsol = async (req, res) => {
     }
 };
 
-const createBanksoal = async (req, res) => {
-    const { body } = req;
-
-    try {
-        const result = await dashboardModel.createBanksoal(body);
-        res.status(201).json({ success: true, message: 'Bank soal baru telah ditambahkan', result });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Gagal menambahkan bank soal', error: error.message });
-    }
-};
 const getDashboard = async (req, res) => {
     try {
         const dashboardData = await dashboardModel.getDashboard();
@@ -60,15 +49,6 @@ const getDashboard = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Gagal mengambil data dashboard', error: error.message });
-    }
-};
-const getBanksoal = async (req, res) => {
-    try {
-        const banksoalData = await dashboardModel.getBanksoal();
-        res.status(200).json(banksoalData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Gagal mengambil data bank soal', error: error.message });
     }
 };
 
@@ -97,8 +77,6 @@ const deleteLatsol = async (req, res) => {
 export default {
     createNewLatsol,
     getDashboard,
-    createBanksoal,
     updateLatsol,
-    getBanksoal,
     deleteLatsol,
 };

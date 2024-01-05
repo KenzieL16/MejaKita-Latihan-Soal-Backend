@@ -130,7 +130,7 @@ const getDashboard = async () => {
                 LEFT JOIN latihansoal_tag lt ON ls.id_latihan_soal = lt.id_latihan_soal
                 LEFT JOIN tag t ON lt.id_tag = t.id_tag
             WHERE
-                ls.deleted IS NULL
+                ls.deleted IS NULL AND status = 'Aktif'
             GROUP BY
                 ls.id_latihan_soal, ls.nama_latihansoal, ls.durasi
         `;
