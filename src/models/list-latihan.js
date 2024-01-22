@@ -1,8 +1,10 @@
 import dbpool from '../config/database.js';
 import dotenv from 'dotenv';
 dotenv.config();
+import ErrorHandler from '../util/error.js';
+const { BadRequestError, InternalServerError, DUPLICATE_NAME} = ErrorHandler;
 
-const createNewLatsol = async ({ nama_latihansoal, durasi, nama_tag, nama_banksoal }) => {
+const createNewLatsol = async ({ nama_latihansoal, durasi, nama_tag, nama_banksoal, status }) => {
     const connection = await dbpool;
 
     try {
@@ -13,19 +15,19 @@ const createNewLatsol = async ({ nama_latihansoal, durasi, nama_tag, nama_bankso
         const [existingResult] = await connection.execute(checkExistenceQuery, [nama_latihansoal]);
 
         if (existingResult && existingResult.length > 0) {
-            throw new Error('Nama_latihansoal already exists in the database. Please choose a different name.');
+            throw new BadRequestError('nama_latihansoal is already exist.')
         }
 
         // If nama_latihansoal doesn't exist, proceed with the insertion
-        const createLatsolQuery = 'INSERT INTO latihan_soal (nama_latihansoal, durasi, status) VALUES (?, ?, "Arsip")';
-        await connection.execute(createLatsolQuery, [nama_latihansoal, durasi]);
+        const createLatsolQuery = 'INSERT INTO latihan_soal (nama_latihansoal, durasi, status) VALUES (?, ?, ?)';
+        await connection.execute(createLatsolQuery, [nama_latihansoal, durasi, status]);
 
         // Dapatkan ID menggunakan SELECT query
         const selectLatsolQuery = 'SELECT id_latihan_soal FROM latihan_soal WHERE nama_latihansoal = ?';
         const [result] = await connection.execute(selectLatsolQuery, [nama_latihansoal]);
 
         if (!result || !result[0] || !result[0].id_latihan_soal) {
-            throw new Error('Failed to retrieve the ID of the inserted row.');
+            throw new InternalServerError('Failed to retrieve the ID of the inserted row.');
         }
 
         const id_latihan_soal = result[0].id_latihan_soal;
@@ -47,7 +49,7 @@ const createNewLatsol = async ({ nama_latihansoal, durasi, nama_tag, nama_bankso
                 const [createdBankSoal] = await connection.execute(createBankSoalQuery, [nama_banksoal]);
 
                 if (!createdBankSoal || !createdBankSoal.insertId) {
-                    throw new Error('Failed to create a new banksoal.');
+                    throw new InternalServerError('Failed to create a new banksoal.');
                 }
 
                 id_bank_soal = createdBankSoal.insertId;
@@ -79,7 +81,7 @@ const createNewLatsol = async ({ nama_latihansoal, durasi, nama_tag, nama_bankso
                     const [createdTag] = await connection.execute(createTagQuery, [tag]);
 
                     if (!createdTag || !createdTag.insertId) {
-                        throw new Error('Failed to create a new tag.');
+                        throw new InternalServerError('Failed to create a new tag.');
                     }
 
                     id_tag = createdTag.insertId;
@@ -92,12 +94,13 @@ const createNewLatsol = async ({ nama_latihansoal, durasi, nama_tag, nama_bankso
 
         await connection.query('COMMIT');
 
-        return { id_latihan_soal, nama_latihansoal, durasi, status: "Arsip", id_bank_soal };
+        return { id_latihan_soal, nama_latihansoal, durasi, status, id_bank_soal, nama_tag };
     } catch (error) {
         await connection.query('ROLLBACK');
         throw error;
     }
 };
+
 async function updateLatsol({ id_latihan_soal, id_bank_soal, status, nama_latihansoal, durasi }) {
     const connection = await dbpool;
 

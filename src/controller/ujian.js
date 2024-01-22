@@ -76,9 +76,33 @@ const countNilai = async (req, res) => {
     }
 };
 
+const doneUjian = async (req, res) => {
+    const { params } = req;
+    const { id_latihan_soal } = params;
+    const { id } = req.user;
+
+    try {
+        if (id === undefined || id_latihan_soal === undefined) {
+            throw new Error('Parameter id_user atau id_latihan_soal tidak valid');
+        }
+        // Panggil fungsi submitJawaban dari model
+        const result = await ujianModel.doneUjian(id, id_latihan_soal);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message,
+        });
+    }
+};
+
+
 export default {
     getAllSoal,
     submitJawaban,
     enrollment,
-    countNilai
+    countNilai,
+    doneUjian
 };

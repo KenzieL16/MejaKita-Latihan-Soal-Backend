@@ -7,12 +7,13 @@ async function addSoal(id_bank_soal, body) {
 
     // Pemeriksaan keberadaan dan nilai properti 'soal'
     if (!soal || typeof soal !== 'object') {
-        throw new Error("Properti 'soal' harus berupa objek.");
+        return { success: false, message: "Properti 'soal' harus berupa objek.", statusCode: 400 };
     }
 
     const connection = await dbpool;
 
     try {
+        console.log('Transaksi dimulai');
         await connection.query('START TRANSACTION');
 
         // Tambahkan data ke tabel soal
@@ -26,10 +27,12 @@ async function addSoal(id_bank_soal, body) {
 
             // Pemeriksaan keberadaan dan nilai properti 'konten_jawaban' dan 'jawaban_benar'
             if (typeof konten_jawaban !== 'string') {
-                throw new Error("Properti 'konten_jawaban' harus berupa string.");
+                await connection.query('ROLLBACK');
+                return { success: false, message: "Properti 'konten_jawaban' harus berupa string.", statusCode: 400 };
             }
             if (typeof jawaban_benar !== 'string' || (jawaban_benar !== '0' && jawaban_benar !== '1')) {
-                throw new Error("Properti 'jawaban_benar' harus berupa angka (0 atau 1) dalam bentuk string.");
+                await connection.query('ROLLBACK');
+                return { success: false, message: "Properti 'jawaban_benar' harus berupa angka (0 atau 1) dalam bentuk string.", statusCode: 400 };
             }
 
             // Tambahkan data ke tabel jawaban
@@ -41,14 +44,19 @@ async function addSoal(id_bank_soal, body) {
         const createPembahasanQuery = 'INSERT INTO pembahasan (id_soal, konten_pembahasan) VALUES (?, ?)';
         await connection.execute(createPembahasanQuery, [id_soal, soal.pembahasan]);
 
+        console.log('Transaksi selesai');
         await connection.query('COMMIT');
 
-        return { id_soal };
+        return { success: true, id_soal };
     } catch (error) {
+        console.error('Kesalahan:', error);
+
+        console.log('Rollback transaksi');
         await connection.query('ROLLBACK');
+
         throw error;
     }
-};
+}
 
 async function updateSoal(id_soal, body) {
     const { soal } = body;
@@ -63,18 +71,16 @@ async function updateSoal(id_soal, body) {
         const updateSoalQuery = 'UPDATE soal SET konten_soal = ? WHERE id_soal = ?';
         await connection.execute(updateSoalQuery, [konten_soal, id_soal]);
 
+        const deleteJawabanQuery = 'UPDATE jawaban SET deleted = NOW() WHERE id_soal = ?';
+        await connection.execute(deleteJawabanQuery, [id_soal]);
+
         for (let j = 0; j < jawaban.length; j++) {
             const { id_jawaban, konten_jawaban, jawaban_benar } = jawaban[j];
+            console.log(id_jawaban, id_soal)
 
-            if (id_jawaban) {
-                // Jika id_jawaban ada, lakukan UPDATE
-                const updateJawabanQuery = 'UPDATE jawaban SET konten_jawaban = ?, jawaban_benar = ? WHERE id_jawaban = ?';
-                await connection.execute(updateJawabanQuery, [konten_jawaban, jawaban_benar, id_jawaban]);
-            } else {
-                // Jika id_jawaban tidak ada, lakukan INSERT
-                const createJawabanQuery = 'INSERT INTO jawaban (id_soal, konten_jawaban, jawaban_benar) VALUES (?, ?, ?)';
-                await connection.execute(createJawabanQuery, [id_soal, konten_jawaban, jawaban_benar]);
-            }
+            const createJawabanQuery = 'INSERT INTO jawaban (id_soal, konten_jawaban, jawaban_benar) VALUES (?, ?, ?)';
+            await connection.execute(createJawabanQuery, [id_soal, konten_jawaban, jawaban_benar]);
+
         }
 
         // Perbarui data pada tabel pembahasan
@@ -101,7 +107,7 @@ async function getAllSoal(id_bank_soal) {
             FROM soal s
             LEFT JOIN pembahasan p ON s.id_soal = p.id_soal
             LEFT JOIN jawaban j ON s.id_soal = j.id_soal
-            WHERE s.id_bank_soal = ? AND s.deleted IS NULL
+            WHERE s.id_bank_soal = ? AND s.deleted IS NULL AND j.deleted IS NULL
         `;
         const [results] = await connection.execute(getAllSoalQuery, [id_bank_soal]);
 

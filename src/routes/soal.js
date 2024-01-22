@@ -6,7 +6,7 @@ import verifyToken from '../middleware/verifytoken.js';
 
 const router = express.Router();
 
-router.post('/:id_bank_soal/add-soal', verifyToken, soalcontroller.addSoal)
+router.post('/:id_bank_soal/add-soal', soalcontroller.addSoal)
 
 router.patch('/edit-soal/:id_soal', verifyToken, soalcontroller.updateSoal)
 

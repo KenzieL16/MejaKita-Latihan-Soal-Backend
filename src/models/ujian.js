@@ -8,25 +8,30 @@ async function getAllSoal(id_latihan_soal) {
     try {
         // Query untuk mendapatkan semua soal berdasarkan id_bank_soal
         const getAllSoalQuery = `
-            SELECT ls.durasi, s.id_soal, s.konten_soal, j.id_jawaban, j.konten_jawaban 
+            SELECT ls.nama_latihansoal, ls.durasi, s.id_soal, s.konten_soal, j.id_jawaban, j.konten_jawaban 
             FROM latihan_soal ls
             JOIN soal s ON ls.id_bank_soal = s.id_bank_soal
             LEFT JOIN jawaban j ON s.id_soal = j.id_soal
-            WHERE ls.id_latihan_soal = ? AND s.deleted IS NULL 
+            WHERE ls.id_latihan_soal = ? AND s.deleted IS NULL AND j.deleted IS NULL
         `;
         const [results] = await connection.execute(getAllSoalQuery, [id_latihan_soal]);
 
         // Proses hasil query untuk mengelompokkan data soal, jawaban, dan pembahasan
         const soalData = {};
+        let nama_latihansoal;
         let durasi;
 
         results.forEach((row) => {
             const { id_soal, konten_soal, konten_pembahasan, id_jawaban, konten_jawaban, jawaban_benar } = row;
 
+            if (nama_latihansoal === undefined) {
+                nama_latihansoal = row.nama_latihansoal;
+            }
             // Get the duration value from the first row since it's the same for all rows
             if (durasi === undefined) {
                 durasi = row.durasi;
             }
+
 
             if (!soalData[id_soal]) {
                 soalData[id_soal] = {
@@ -48,6 +53,7 @@ async function getAllSoal(id_latihan_soal) {
 
         // Ubah objek menjadi array untuk hasil yang lebih mudah diolah
         const hasilAkhir = {
+            nama_latihansoal,
             durasi,
             soalData: Object.values(soalData),
         };
@@ -62,6 +68,7 @@ async function submitJawaban(id_user, id_jawaban, id_latihan_soal) {
     const connection = await dbpool;
 
     try {
+        console.log('Transaksi dimulai');
         await connection.query('START TRANSACTION');
 
         // Cek apakah data sudah ada untuk kombinasi kunci tertentu
@@ -92,9 +99,14 @@ async function submitJawaban(id_user, id_jawaban, id_latihan_soal) {
             await connection.execute(insertJawabanUserQuery, [id_user, id_jawaban, id_latihan_soal, id_jawaban]);
         }
 
+        console.log('Transaksi selesai');
         await connection.query('COMMIT');
     } catch (error) {
+        console.error('Kesalahan:', error);
+
+        console.log('Rollback transaksi');
         await connection.query('ROLLBACK');
+
         throw error;
     }
 }
@@ -129,7 +141,7 @@ async function countNilai(id_user, id_latihan_soal) {
             SELECT COUNT(ju.id_jawaban) AS jumlah_benar
             FROM jawaban_user ju
             INNER JOIN jawaban j ON ju.id_jawaban = j.id_jawaban
-            WHERE ju.id_user = ? AND ju.id_latihan_soal = ? AND j.jawaban_benar = 1
+            WHERE ju.id_user = ? AND ju.id_latihan_soal = ? AND j.jawaban_benar = 1 
         `;
 
         const [result] = await connection.execute(hitungJumlahBenarQuery, [id_user, id_latihan_soal]);
@@ -140,7 +152,7 @@ async function countNilai(id_user, id_latihan_soal) {
             SELECT COUNT(*) AS jumlah_soal
             FROM soal s
             INNER JOIN latihan_soal ls ON s.id_bank_soal = ls.id_bank_soal
-            WHERE ls.id_latihan_soal = ?
+            WHERE ls.id_latihan_soal = ? AND s.deleted IS NULL
         `;
 
         const [soalResult] = await connection.execute(hitungJumlahSoalQuery, [id_latihan_soal]);
@@ -186,9 +198,101 @@ async function countNilai(id_user, id_latihan_soal) {
     }
 }
 
+async function doneUjian(id_user, id_latihan_soal) {
+    const connection = await dbpool;
+    console.log("Parameters:", [id_latihan_soal, id_user]);
+
+    try {
+        // Query untuk mendapatkan semua jawaban user beserta konten_jawaban berdasarkan id_latihan_soal dan id_user
+        const getJawabanUserQuery = `
+            SELECT ju.id_user, ju.id_jawaban_user, ju.id_jawaban, ju.id_latihan_soal, ju.id_soal, j.konten_jawaban, j.jawaban_benar
+            FROM jawaban_user ju
+            LEFT JOIN jawaban j ON ju.id_jawaban = j.id_jawaban
+            WHERE ju.id_latihan_soal = ? AND ju.id_user = ?
+        `;
+        const [jawabanUserResults] = await connection.execute(getJawabanUserQuery, [id_latihan_soal, id_user]);
+
+        // Query untuk mendapatkan semua soal berdasarkan id_latihan_soal
+        const getAllSoalQuery = `
+            SELECT ls.nama_latihansoal, ls.durasi, s.id_soal, s.konten_soal, p.konten_pembahasan, j.id_jawaban, j.konten_jawaban, j.jawaban_benar
+            FROM latihan_soal ls
+            JOIN soal s ON ls.id_bank_soal = s.id_bank_soal
+            LEFT JOIN pembahasan p ON s.id_soal = p.id_soal
+            LEFT JOIN jawaban j ON s.id_soal = j.id_soal
+            WHERE ls.id_latihan_soal = ? AND s.deleted IS NULL AND j.deleted IS NULL
+        `;
+        const [results] = await connection.execute(getAllSoalQuery, [id_latihan_soal]);
+
+        // Query untuk mendapatkan nilai akhir
+        const getNilaiAkhirQuery = `
+            SELECT konten_nilai
+            FROM nilai_akhir
+            WHERE id_latihan_soal = ? AND id_user = ?
+        `;
+        const [nilaiAkhirResults] = await connection.execute(getNilaiAkhirQuery, [id_latihan_soal, id_user]);
+
+        // Proses hasil query untuk mengelompokkan data soal, jawaban, dan pembahasan
+        const soalData = {};
+        let nama_latihansoal;
+        let durasi;
+
+        // Gabungkan hasil jawaban user ke dalam objek soalData
+        results.forEach((row) => {
+            const { id_soal, konten_soal, konten_pembahasan, id_jawaban, konten_jawaban, jawaban_benar } = row;
+
+            if (nama_latihansoal === undefined) {
+                nama_latihansoal = row.nama_latihansoal;
+            }
+
+            if (durasi === undefined) {
+                durasi = row.durasi;
+            }
+
+            if (!soalData[id_soal]) {
+                soalData[id_soal] = {
+                    id_soal,
+                    konten_soal,
+                    pembahasan: konten_pembahasan,
+                    jawaban: [],
+                };
+            }
+
+            if (id_jawaban) {
+                const jawabanUser = jawabanUserResults.find((jawaban) => jawaban.id_soal === id_soal);
+                soalData[id_soal].jawaban.push({
+                    id_jawaban,
+                    konten_jawaban,
+                    jawaban_benar,
+                });
+
+                // Tambahkan informasi jawaban user sebagai objek terpisah
+                soalData[id_soal].jawaban_user = {
+                    id_jawaban_user: jawabanUser ? jawabanUser.id_jawaban_user : null,
+                    id_jawaban: jawabanUser ? jawabanUser.id_jawaban : null,
+                    konten_jawaban: jawabanUser ? jawabanUser.konten_jawaban : null,
+                    jawaban_benar: jawabanUser ? jawabanUser.jawaban_benar : null,
+                };
+            }
+        });
+
+        // Ubah objek menjadi array untuk hasil yang lebih mudah diolah
+        const hasilAkhir = {
+            nama_latihansoal,
+            durasi,
+            soalData: Object.values(soalData),
+            nilai_akhir: nilaiAkhirResults.length > 0 ? nilaiAkhirResults[0].konten_nilai : null,
+        };
+        return hasilAkhir;
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
 export default {
     getAllSoal,
     submitJawaban,
     enrollment,
-    countNilai
+    countNilai,
+    doneUjian
 }

@@ -1,21 +1,41 @@
 import dashboardModel from "../models/list-latihan.js";
+import ErrorHandler from '../util/error.js';  // Sesuaikan path dengan struktur proyek Anda
+
+const { CustomError, BadRequestError, InternalServerError, DUPLICATE_NAME } = ErrorHandler;
 
 
 const createNewLatsol = async (req, res) => {
     const { body, user } = req;
 
     try {
-        if (user && user.role === 'Kontributor') {
+        // if (user && user.role === 'Kontributor') {
             const result = await dashboardModel.createNewLatsol(body);
             res.status(201).json({ success: true, message: 'Latihan soal baru telah ditambahkan', result });
-        } else {
-            res.status(403).json({ success: false, message: 'Unauthorized' });
-        }
+        // } else {
+        //     res.status(403).json({ success: false, message: 'Unauthorized' });
+        // }
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Gagal menambahkan latihan soal', error: error.message });
+
+        if (error instanceof DUPLICATE_NAME) {
+            let errorMessage = error.message;
+
+            // Cek apakah terdapat objek error tambahan
+            if (error.details) {
+                errorMessage = error.details.message;
+            }
+
+            res.status(400).json({ success: false, message: errorMessage });
+        } else if (error instanceof CustomError) {
+            // Kesalahan kustom lainnya yang telah dihandle
+            res.status(error.statusCode).json({ success: false, message: error.message });
+        } else {
+            // Kesalahan internal server atau kesalahan lain yang tidak terduga
+            res.status(500).json({ success: false, message: 'Gagal menambahkan latihan soal', error: error.message });
+        }
     }
 };
+
 const updateLatsol = async (req, res) => {
     try {
         console.log(req.params)

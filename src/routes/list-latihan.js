@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.get('/', dashboardcontroller.getDashboard);
 
-router.post('/add-latsol', verifyToken, dashboardcontroller.createNewLatsol);
+router.post('/add-latsol', dashboardcontroller.createNewLatsol);
 
 router.patch('/update/:id_latihan_soal', verifyToken, dashboardcontroller.updateLatsol);
 

@@ -14,4 +14,6 @@ router.post('/:id_latihan_soal/enrollment', verifyToken, ujiancontroller.enrollm
 
 router.post('/:id_latihan_soal/nilai', verifyToken, ujiancontroller.countNilai)
 
+router.get('/:id_latihan_soal/finish', verifyToken, ujiancontroller.doneUjian)
+
 export default router;

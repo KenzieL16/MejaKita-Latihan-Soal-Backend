@@ -1,5 +1,6 @@
 import banksoalModel from "../models/bank-soal.js"
-
+import ErrorHandler from '../util/error.js';
+const { BadRequestError, InternalServerError, UnauthorizedError } = ErrorHandler;
 const createBanksoal = async (req, res) => {
     const { body } = req;
     const { params } = req;
@@ -10,7 +11,12 @@ const createBanksoal = async (req, res) => {
         res.status(201).json({ success: true, message: 'Bank soal baru telah ditambahkan', result });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Gagal menambahkan bank soal', error: error.message });
+
+        if (error instanceof InternalServerError) {
+            res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menambahkan bank soal', error: error.message });
+        } else {
+            res.status(500).json({ success: false, message: 'Gagal menambahkan bank soal', error: error.message });
+        }
     }
 };
 
@@ -26,13 +32,13 @@ const getBanksoal = async (req, res) => {
 
 const updateBanksoal = async (req, res) => {
     try {
-        console.log(req.params)
+        console.log(req.params);
         const { id_bank_soal } = req.params;
         const { nama_banksoal } = req.body;
-        const { user } = req;
+        //const { user } = req;
 
-        if (user && user.role === 'Kontributor') {
-            // Panggil fungsi banksoal dari service
+        //if (user && user.role === 'Kontributor') {
+            // Panggil fungsi updateBanksoal dari model
             const result = await banksoalModel.updateBanksoal({ id_bank_soal, nama_banksoal });
 
             return res.status(200).json({
@@ -40,39 +46,49 @@ const updateBanksoal = async (req, res) => {
                 message: 'Bank soal berhasil diperbarui',
                 data: result,
             });
-        } else {
-            res.status(403).json({ success: false, message: 'Unauthorized' });
-        }
+        //} else {
+         //   res.status(403).json({ success: false, message: 'Unauthorized' });
+        //}
     } catch (error) {
         console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: 'Gagal memperbarui bank soal',
-            error: error.message,
-        });
+
+        if (error instanceof UnauthorizedError) {
+            return res.status(403).json({ success: false, message: error.message });
+        } else if (error instanceof InternalServerError) {
+            return res.status(500).json({ success: false, message: 'Terjadi kesalahan saat memperbarui bank soal', error: error.message });
+        } else {
+            return res.status(500).json({ success: false, message: 'Gagal memperbarui bank soal', error: error.message });
+        }
     }
 };
 
 const deleteBanksoal = async (req, res) => {
     const { id_bank_soal } = req.params;
-    const { body } = req;
-    const { user } = req;
+    //const { user } = req;
 
     try {
-        if (user && user.role === 'Kontributor') {
+        //if (user && user.role === 'Kontributor') {
+            // Panggil fungsi deleteBankSoal dari model
             await banksoalModel.deleteBankSoal(id_bank_soal);
+
             res.json({
+                success: true,
                 message: 'Berhasil Menghapus Bank Soal',
-                data: body
-            })
-        } else {
-            res.status(403).json({ success: false, message: 'Unauthorized' });
-        }
+                data: { id_bank_soal }
+            });
+        // } else {
+        //     throw new UnauthorizedError('Unauthorized');
+        // }
     } catch (error) {
-        res.status(500).json({
-            message: "Server Error",
-            serverMessage: error
-        })
+        console.error(error);
+
+        if (error instanceof UnauthorizedError) {
+            return res.status(403).json({ success: false, message: error.message });
+        } else if (error instanceof InternalServerError) {
+            return res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menghapus bank soal', error: error.message });
+        } else {
+            return res.status(500).json({ success: false, message: 'Gagal menghapus bank soal', error: error.message });
+        }
     }
 };
 
